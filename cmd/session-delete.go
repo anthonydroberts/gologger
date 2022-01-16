@@ -16,8 +16,8 @@ import (
 var sessionDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Args:  cobra.MaximumNArgs(1),
-	Short: "A brief description of your command",
-	Long:  `sdelete long desc`,
+	Short: "Delete an existing session",
+	Long:  `Delete an existing session`,
 	Run: func(cmd *cobra.Command, args []string) {
 		sessionList := data.GetSessions()
 		var selectedSession string
