@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/anthonydroberts/gologger/data"
 	"github.com/anthonydroberts/gologger/state"
@@ -14,8 +15,8 @@ import (
 
 // historyDeleteCmd represents the delete command
 var historyDeleteCmd = &cobra.Command{
-	Use:   "delete",
-	Args:  cobra.ExactArgs(0),
+	Use:   "delete [number]",
+	Args:  cobra.MaximumNArgs(1),
 	Short: "Browse & delete previously saved command logs in the session",
 	Long:  `Browse & open previously saved command logs in the session`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -34,20 +35,29 @@ var historyDeleteCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		for _, entry := range entryContentList {
-			entryListDisplay = append(entryListDisplay, fmt.Sprintf("%s | Status: %d > %s", entry.TimeStamp, entry.ExitCode, entry.Command))
-		}
+		if len(args) == 0 {
+			for _, entry := range entryContentList {
+				entryListDisplay = append(entryListDisplay, fmt.Sprintf("%s | Status: %d > %s", entry.TimeStamp, entry.ExitCode, entry.Command))
+			}
 
-		prompt := promptui.Select{
-			Label: fmt.Sprintf("Select an entry to view (current session: '%s')", state.Glog.ActiveSession),
-			Items: entryListDisplay,
-		}
-		numChoice, _, err := prompt.Run()
-		if err != nil {
-			log.Fatalf("Prompt failed or cancelled %v\n", err)
-		}
+			prompt := promptui.Select{
+				Label: fmt.Sprintf("Select an entry to view (current session: '%s')", state.Glog.ActiveSession),
+				Items: entryListDisplay,
+			}
+			numChoice, _, err := prompt.Run()
+			if err != nil {
+				log.Fatalf("Prompt failed or cancelled %v\n", err)
+			}
 
-		selectedEntry = entryContentList[numChoice]
+			selectedEntry = entryContentList[numChoice]
+		} else {
+			inputNum, convertArgErr := strconv.Atoi(args[0])
+			if convertArgErr != nil || inputNum+1 > len(entryContentList) {
+				log.Fatalf("Argument must be a number between 0 and %d\n", len(entryContentList))
+			}
+
+			selectedEntry = entryContentList[inputNum]
+		}
 
 		terminal.Msg("print", fmt.Sprintf("Deleting entry: '%s'", selectedEntry.Command))
 		data.DeleteEntry(selectedEntry)

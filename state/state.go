@@ -22,7 +22,7 @@ type Conf struct {
 
 var gologgerHomeName = ".gologger"
 var gologgerConfigFileName = "gologger-config.yml"
-var gologgerHomeDir = filepath.Join(getHomeDir(), gologgerHomeName)
+var gologgerHomeDir = getGologgerHome()
 var configFilePath = filepath.Join(gologgerHomeDir, gologgerConfigFileName)
 
 var default_config_value_active_session = "default-session"
@@ -45,10 +45,17 @@ func newGoLoggerState() *GoLoggerState {
 	return &GoLoggerState{GologgerHome: gologgerHomeDir, GologgerConfigFile: configFilePath, ActiveSession: configContent.ActiveSession}
 }
 
-func getHomeDir() string {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
+func getGologgerHome() string {
+	var homeDir string
+
+	if os.Getenv("GOLOGGER_HOME") != "" {
+		homeDir = os.Getenv("GOLOGGER_HOME")
+	} else {
+		userHome, err := os.UserHomeDir()
+		if err != nil {
+			log.Fatal(err)
+		}
+		homeDir = filepath.Join(userHome, gologgerHomeName)
 	}
 
 	return homeDir
