@@ -52,7 +52,16 @@ func RunCommand(arg string, silent bool, gologgerSilent bool) (string, string, s
 	return arg, stdout.String(), stderr.String(), exit, startTime
 }
 
-func getParentProcess(pid int) ps.Process {
+func getExecutingShellCmd() string {
+	// Get the ps.Process of Go's parent process, which should be the shell's process
+	// Process hierarchy: Shell -> Go -> Gologger
+	shellProc := getShellProcess(os.Getppid())
+	shellStr := shellProc.Executable()
+
+	return strings.TrimSuffix(shellStr, filepath.Ext(shellStr))
+}
+
+func getShellProcess(pid int) ps.Process {
 	ppid := -1
 	var pProcess ps.Process = nil
 	procs, err := ps.Processes()
@@ -64,6 +73,11 @@ func getParentProcess(pid int) ps.Process {
 	for _, p := range procs {
 		if p.Pid() == pid {
 			ppid = p.PPid()
+
+			// Exit early if the shell we are using is the direct parent of gologger
+			if !strings.Contains(p.Executable(), "go") {
+				return p
+			}
 			break
 		}
 	}
@@ -80,13 +94,4 @@ func getParentProcess(pid int) ps.Process {
 	}
 
 	return pProcess
-}
-
-func getExecutingShellCmd() string {
-	// Get the ps.Process of Go's parent process, which should be the shell's process
-	// Process hierarchy: Shell -> Go -> Gologger
-	shellProc := getParentProcess(os.Getppid())
-	shellStr := shellProc.Executable()
-
-	return strings.TrimSuffix(shellStr, filepath.Ext(shellStr))
 }
